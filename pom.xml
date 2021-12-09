@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
-    <artifactId>vCard</artifactId>
+    <artifactId>customVCard</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>vCard</name>
-    <description>vCard</description>
+    <name>customVCard</name>
+    <description>customVCard</description>
     <properties>
         <java.version>11</java.version>
     </properties>
@@ -36,6 +36,11 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>1.14.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.ez-vcard</groupId>
+            <artifactId>ez-vcard</artifactId>
+            <version>0.11.3</version>
         </dependency>
     </dependencies>
 

@@ -1,6 +1,6 @@
 package com.example.vcard;
 
-public class VCard {
+public class CustomVCard {
 
     public String FN;
     public String TEL;

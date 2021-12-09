@@ -1,16 +1,23 @@
 package com.example.vcard;
 
+import ezvcard.Ezvcard;
+import ezvcard.VCard;
+import ezvcard.VCardVersion;
+import ezvcard.property.StructuredName;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,27 +28,44 @@ public class VCardController {
 
     @GetMapping("/search")
     public ResponseEntity<String> search(@RequestParam String call) throws IOException {
-        System.out.println("https://www.pkt.pl/szukaj/" + call);
         Document doc = Jsoup.connect("https://www.pkt.pl/szukaj/" + call).get();
         Elements elements = doc.select(".box-content.company-row.list-sel");
 
-        String result = "<meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0\\\">";
-        List<VCard> vCards = new ArrayList<>();
-        for (Element element:
-             elements) {
-            VCard vCard = new VCard();
-            vCards.add(vCard);
-            vCard.FN = element.select(".company-name").text();
-            vCard.TEL = element.select(".phone-content").text();
-            vCard.URL = element.select(".www--full").text();
-            vCard.EMAIL = element.select("a.popup span").attr("title");
+        StringBuilder result = new StringBuilder();
+        List<CustomVCard> customVCards = new ArrayList<>();
+        for (Element element : elements) {
+            CustomVCard customVCard = new CustomVCard();
+            customVCards.add(customVCard);
+            customVCard.FN = element.select(".company-name").text();
+            customVCard.TEL = element.select(".phone-content").text();
+            customVCard.URL = element.select(".www--full").text();
+            customVCard.EMAIL = element.select("a.popup span").attr("title");
         }
 
-        for (VCard node :
-                vCards) {
-            result += node.FN + " <button action=" + "\"" + addrString + "&" + "fn=" + node.FN+ "&" + "tel=" + node.TEL+ "&" + "url=" + node.URL+ "&" + "email=" + node.EMAIL + "\"" + ">Generate VCard</button> <br>";
+        for (CustomVCard node : customVCards) {
+            result.append(node.FN).append(" <a href=").append("\"").append(addrString).append("?").append("fn=").append(node.FN).append("&").append("tel=").append(node.TEL).append("&").append("url=").append(node.URL).append("&").append("email=").append(node.EMAIL).append("\"").append("><button>Generate VCard</button></a> <br>");
         }
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(result.toString());
+    }
+
+    @GetMapping("/generate")
+    public ResponseEntity<Resource> generate(@RequestParam String fn, @RequestParam String tel,
+                                             @RequestParam String url, @RequestParam String email) throws IOException {
+        VCard vcard = new VCard();
+        vcard.setFormattedName(fn);
+        vcard.addTelephoneNumber(tel);
+        vcard.addUrl(url);
+        vcard.addEmail(email);
+
+        File file = new File("VCard.vcf");
+        Ezvcard.write(vcard).version(VCardVersion.V4_0).go(file);
+
+        InputStreamResource resource = new InputStreamResource(new FileInputStream("VCard.vcf"));
+        return ResponseEntity
+                .ok()
+                .header("Content-Disposition", "attachment; filename=" + fn + ".vcf")
+                .contentLength(file.length())
+                .contentType(MediaType.parseMediaType("text/vcf")).body(resource);
     }
 
 
